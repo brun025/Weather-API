@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<head>
+    <meta charset="UTF-8">
+    <title>Weather</title>
+    <meta content='width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no' name='viewport'>
+
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css" integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
+</head>
+
+<body>
+    <style>
+        body{
+            background-color: #ded6d6;
+        }
+        .row{
+            padding: 5%;
+        }
+    </style>
+    <div class="container">
+        <div class="row">
+            <div class="col-md-6">
+                <!-- <div class="card text-white bg-secondary"> -->
+                <div class="card">
+                    <div class="card-header">
+                        <input type="text" name="search" id="search" class="form-control search" placeholder="Ex: Itajubá ou Itajubá, BR">
+                    </div>
+                    <div class="card-body card-body-change">
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header most-search">
+                    </div>
+
+                    <div class="card-body card-body-last-cities">
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</body>
+
+<script
+  src="https://code.jquery.com/jquery-3.4.1.min.js"
+  integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo="
+  crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js" integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo" crossorigin="anonymous"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js" integrity="sha384-wfSDF2E50Y2D1uUdj0O3uMBJnjuUD4Ih7YwaYd1iqfktj0Uod8GCExl3Og8ifwB6" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.24.0/moment.min.js"></script>
+
+<script>
+    let route = null;
+    let dayOfWeek = ['Domingo', 'Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado']
+    let city = {};
+    let lastCities = [];
+    let now, duration;
+    sessionStorage.setItem('lastSearchs', JSON.stringify(lastCities));
+
+    $(document).ready(function () {
+        getCities();
+
+        $(document).on('keypress', '.search', function (e) {
+        // $('.search').bind("enterKey",function(e){
+            if(e.which === 13){
+                route = `https://api.openweathermap.org/data/2.5/weather?q=${$('#search').val()}&appid=3002f206a4e280f99b3bda6d27de39d9&lang=pt_br`
+    
+                $.ajax({
+                    url: route,
+                    datatype: "json",
+                    method: "GET",
+                }).done(function(response) {
+                    changeCard(response);
+                }).fail(function(fail) {
+                    alert('Cidade não encontrada');
+                }).always(function() {
+                });
+            }
+        });
+
+        function changeCard(res){
+            // console.log(res);
+            // Alterando o card de acordo com a cidade escolhida
+            $('.card-body-change').html(`
+                <h4 class="card-title">${res.name}, ${res.sys.country}</h4>
+                <h6 class="card-subtitle mb-2 text-muted">${dayOfWeek[moment().day()]}, ${moment().format('HH:mm')}, ${res.weather[0].description}</h6>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <h1 class="card-subtitle text-muted">${(res.main.temp - 273.15).toFixed(2)}ºC</h1>
+                    </div>
+
+                    <div class="col-md-6">
+                        <img src="https://openweathermap.org/img/wn/${res.weather[0].icon}@2x.png" alt="${res.weather[0].icon}" style="margin-top:-15%;">
+                    </div>
+
+                    <div class="col-md-3">
+                        <img src="assets/icons/cloud-download-alt-solid.svg" alt="cloud" style="height: 50%; width: 50%">
+                    </div>
+                    <div class="col-md-3">
+                        <span>${res.main.humidity}%</span>
+                    </div>
+                </div>
+            `)
+
+            city = {
+                name: res.name,
+                temp: (res.main.temp - 273.15).toFixed(2) + 'ºC',//turn Kelvin in C
+                description: res.weather[0].description,
+                date: moment(new Date()),
+                code: res.id,
+                amount: 1,
+            };
+
+            // usando variáveis de sessão para as últimas cidades pesquisadas
+            lastCities = JSON.parse(sessionStorage.getItem('lastSearchs'));
+            
+            lastCities.push(city);
+
+            if(lastCities.length == 5){//exbindo sempre as 4 últimas cidades pesquisadas
+                lastCities.shift();
+            }
+
+            sessionStorage.setItem('lastSearchs', JSON.stringify(lastCities));
+
+            $('.card-body-last-cities').html('');
+            $.each(lastCities, function(i, v)
+            {
+                now = moment(new Date());
+                duration = moment.duration(now.diff(v.date));
+                $('.card-body-last-cities').append(`
+                    <h6>${v.name}, ${v.temp}, ${v.description} à ${duration.get('minutes')} minutos atrás</h6>
+                    <br/>
+                `)
+            });
+
+            city = {
+                name: res.name,
+                code: res.id,
+                amount: 1,
+            };
+
+            // Pesquisando se a cidade já foi pesquisada
+            $.ajax({
+                url: `${window.location.href}v1/cities/${res.id}`,
+                datatype: "json",
+                method: "GET"
+            })
+            .done(function(response) {
+                // console.log(response)
+                if(response == ''){
+                    saveOrUpdate(city, 'save');//Se ela não está no banco salva
+                }
+                else{
+                    city.id = response.id;
+                    city.amount = response.amount + 1;
+                    saveOrUpdate(city, 'update');//Caso esteja edita a qtd de vezes que foi pesquisada
+                }
+            }).fail(function(fail) {
+                console.log(fail)
+            });
+        }
+
+        function saveOrUpdate(city, type){
+            if(type == 'save'){
+                $.ajax({
+                    url: window.location.href + 'v1/cities',
+                    datatype: "json",
+                    data: city,
+                    method: "POST"
+                })
+                .done(function(response) {
+                    // console.log(response)
+                    getCities();
+                }).fail(function(fail) {
+                    console.log(fail)
+                });
+            }
+            else{
+                // console.log('update', city)
+                $.ajax({
+                    url: `${window.location.href}v1/cities/${city.id}`,
+                    datatype: "json",
+                    data: city,
+                    method: "PUT"
+                })
+                .done(function(response) {
+                    // console.log(response)
+                    getCities();
+                }).fail(function(fail) {
+                    console.log(fail)
+                });
+            }
+        }
+
+        // Listando as 5 últimas cidades com o maior indice de pesquisa
+        function getCities(){
+            $.ajax({
+                url: window.location.href + 'v1/cities',
+                datatype: "json",
+                method: "GET"
+            })
+            .done(function(response) {
+                // console.log('Mais pesquisadas', response)
+
+                $('.most-search').html('Top 5 cidades mais pesquisadas <br>');
+                $.each(response, function(i, v)
+                {
+                    $('.most-search').append(`
+                        <span class="badge badge-pill badge-dark">${v.name}</span>
+                    `)
+                });
+            }).fail(function(fail) {
+                console.log(fail)
+            });
+        }
+    });
+</script>
+</html>
