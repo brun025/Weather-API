@@ -1,6 +1,6 @@
 # weather
 
-Maintainer: Bruno Felipe -- https://github.com/fpviviani
+Maintainer: Bruno Felipe -- https://github.com/brun025
 
 Projeto Weather, consultar clima de cidades em tempo real.
 APIs em node, usando mysql como banco de dados e nestjs como framework.
