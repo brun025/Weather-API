@@ -23,7 +23,7 @@
     "@nestjs/common": "^6.10.14",
     "@nestjs/config": "^0.2.2",
     "@nestjs/core": "^6.10.14",
-    "@nestjs/platform-express": "^6.10.14",
+    "@nestjs/platform-express": "^9.2.1",
     "@nestjs/serve-static": "^2.1.0",
     "@nestjs/swagger": "^4.2.8",
     "@nestjs/typeorm": "^6.3.1",
